@@ -150,6 +150,17 @@ export const LoginPage = () => {
                   Register here
                 </button>
               </div>
+              
+              <div className="text-center text-sm text-muted-foreground pt-2 border-t border-border/50">
+                Administrator?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/login')}
+                  className="text-brand hover:text-brand-secondary transition-smooth font-medium"
+                >
+                  Admin Login
+                </button>
+              </div>
             </div>
           </CardContent>
         </Card>

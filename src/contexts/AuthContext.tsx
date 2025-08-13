@@ -14,6 +14,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (pin: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  adminLogin: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   register: (userData: RegisterData) => Promise<boolean>;
   isLoading: boolean;
@@ -52,10 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (pin: string, password: string, rememberMe = false): Promise<boolean> => {
+  const adminLogin = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Admin login
-      if (pin === 'admin' && password === '123456') {
+      // Admin login with username and password
+      if (username === 'admin' && password === '123456') {
         const adminUser: User = {
           id: 'admin',
           name: 'System Administrator',
@@ -70,7 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('onnorokom_user', JSON.stringify(adminUser));
         return true;
       }
+      return false;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return false;
+    }
+  };
 
+  const login = async (pin: string, password: string, rememberMe = false): Promise<boolean> => {
+    try {
       // Regular user login (mock implementation)
       // In real app, this would make API call to verify credentials
       const mockUsers: User[] = [
@@ -134,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     login,
+    adminLogin,
     logout,
     register,
     isLoading
