@@ -10,564 +10,508 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      admin: {
+      admin_login_attempts: {
         Row: {
-          created_at: string
-          id: string
-          password_hash: string
-          username: string
+          id: number
+          ip_address: string | null
+          timestamp: string | null
+          username: string | null
         }
         Insert: {
-          created_at?: string
-          id?: string
-          password_hash: string
-          username: string
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
+          username?: string | null
         }
         Update: {
-          created_at?: string
-          id?: string
-          password_hash?: string
-          username?: string
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
+          username?: string | null
         }
         Relationships: []
       }
-      appointments: {
+      admin_preferences: {
         Row: {
-          appointment_date: string
-          concern: string
-          created_at: string
-          doctor_id: string
+          admin_id: string
+          filter_date_end: string | null
+          filter_date_start: string | null
+          filter_room_id: string | null
           id: string
-          patient_id: string
-          patient_name: string
-          patient_pin: string
-          phone: string
-          reason: string
-          schedule_end: string
-          schedule_start: string
-          serial_number: number
-          status: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          appointment_date: string
-          concern: string
-          created_at?: string
-          doctor_id: string
+          admin_id: string
+          filter_date_end?: string | null
+          filter_date_start?: string | null
+          filter_room_id?: string | null
           id?: string
-          patient_id: string
-          patient_name: string
-          patient_pin: string
-          phone: string
-          reason: string
-          schedule_end: string
-          schedule_start: string
-          serial_number: number
-          status?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          appointment_date?: string
-          concern?: string
-          created_at?: string
-          doctor_id?: string
+          admin_id?: string
+          filter_date_end?: string | null
+          filter_date_start?: string | null
+          filter_room_id?: string | null
           id?: string
-          patient_id?: string
-          patient_name?: string
-          patient_pin?: string
-          phone?: string
-          reason?: string
-          schedule_end?: string
-          schedule_start?: string
-          serial_number?: number
-          status?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "appointments_doctor_id_fkey"
-            columns: ["doctor_id"]
+            foreignKeyName: "admin_preferences_filter_room_id_fkey"
+            columns: ["filter_room_id"]
             isOneToOne: false
-            referencedRelation: "doctors"
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      admin_sessions: {
+        Row: {
+          admin_id: number | null
+          created_at: string | null
+          expires_at: string | null
+          id: number
+          token: string | null
+        }
+        Insert: {
+          admin_id?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: number
+          token?: string | null
+        }
+        Update: {
+          admin_id?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: number
+          token?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "appointments_patient_id_fkey"
-            columns: ["patient_id"]
+            foreignKeyName: "admin_sessions_admin_id_fkey"
+            columns: ["admin_id"]
             isOneToOne: false
-            referencedRelation: "patients"
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admins: {
+        Row: {
+          created_at: string | null
+          id: number
+          password: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          password?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          password?: string | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      booking_repeats: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          repeat_type: Database["public"]["Enums"]["repeat_type_enum"] | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          repeat_type?: Database["public"]["Enums"]["repeat_type_enum"] | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          repeat_type?: Database["public"]["Enums"]["repeat_type_enum"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_repeats_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
         ]
       }
       bookings: {
         Row: {
-          approved_by_admin_id: string | null
           created_at: string | null
-          created_by_pin: string | null
+          date: string
           end_time: string
-          guest_emails: string[] | null
           id: string
-          is_guest_allowed: boolean | null
           is_recurring: boolean | null
-          meeting_title: string
           parent_booking_id: string | null
-          recurrence_end_date: string | null
-          recurrence_rule: string | null
-          rejection_reason: string | null
           remarks: string | null
-          repeat_type: string
+          repeat_end_date: string | null
+          repeat_type: string | null
           room_id: string
-          serial_number: number | null
           start_time: string
-          status: string
+          title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          approved_by_admin_id?: string | null
           created_at?: string | null
-          created_by_pin?: string | null
+          date: string
           end_time: string
-          guest_emails?: string[] | null
           id?: string
-          is_guest_allowed?: boolean | null
           is_recurring?: boolean | null
-          meeting_title: string
           parent_booking_id?: string | null
-          recurrence_end_date?: string | null
-          recurrence_rule?: string | null
-          rejection_reason?: string | null
           remarks?: string | null
-          repeat_type?: string
+          repeat_end_date?: string | null
+          repeat_type?: string | null
           room_id: string
-          serial_number?: number | null
           start_time: string
-          status?: string
+          title: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          approved_by_admin_id?: string | null
           created_at?: string | null
-          created_by_pin?: string | null
+          date?: string
           end_time?: string
-          guest_emails?: string[] | null
           id?: string
-          is_guest_allowed?: boolean | null
           is_recurring?: boolean | null
-          meeting_title?: string
           parent_booking_id?: string | null
-          recurrence_end_date?: string | null
-          recurrence_rule?: string | null
-          rejection_reason?: string | null
           remarks?: string | null
-          repeat_type?: string
+          repeat_end_date?: string | null
+          repeat_type?: string | null
           room_id?: string
-          serial_number?: number | null
           start_time?: string
-          status?: string
+          title?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "bookings_approved_by_admin_id_fkey"
-            columns: ["approved_by_admin_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_created_by_pin_fkey"
-            columns: ["created_by_pin"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["pin"]
-          },
-          {
-            foreignKeyName: "bookings_parent_booking_id_fkey"
-            columns: ["parent_booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bookings_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
-            referencedRelation: "meeting_rooms"
+            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      doctors: {
-        Row: {
-          availability_date: string | null
-          break_end: string | null
-          break_start: string | null
-          created_at: string
-          degree: string
-          designation: string | null
-          end_time: string | null
-          experience: string | null
-          form_activation_date: string | null
-          id: string
-          name: string
-          password_hash: string
-          patient_limit: number | null
-          start_time: string | null
-          updated_at: string
-          username: string
-        }
-        Insert: {
-          availability_date?: string | null
-          break_end?: string | null
-          break_start?: string | null
-          created_at?: string
-          degree: string
-          designation?: string | null
-          end_time?: string | null
-          experience?: string | null
-          form_activation_date?: string | null
-          id?: string
-          name: string
-          password_hash: string
-          patient_limit?: number | null
-          start_time?: string | null
-          updated_at?: string
-          username: string
-        }
-        Update: {
-          availability_date?: string | null
-          break_end?: string | null
-          break_start?: string | null
-          created_at?: string
-          degree?: string
-          designation?: string | null
-          end_time?: string | null
-          experience?: string | null
-          form_activation_date?: string | null
-          id?: string
-          name?: string
-          password_hash?: string
-          patient_limit?: number | null
-          start_time?: string | null
-          updated_at?: string
-          username?: string
-        }
-        Relationships: []
-      }
-      meeting_room_categories: {
-        Row: {
-          allow_public_bookings: boolean | null
-          approval_required: boolean | null
-          color: string | null
-          created_at: string | null
-          id: string
-          manager_id: string | null
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          allow_public_bookings?: boolean | null
-          approval_required?: boolean | null
-          color?: string | null
-          created_at?: string | null
-          id?: string
-          manager_id?: string | null
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          allow_public_bookings?: boolean | null
-          approval_required?: boolean | null
-          color?: string | null
-          created_at?: string | null
-          id?: string
-          manager_id?: string | null
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      meeting_rooms: {
-        Row: {
-          available_time_limit: string | null
-          capacity: number | null
-          category_id: string | null
-          created_at: string | null
-          facilities: string | null
-          id: string
-          image_url: string | null
-          is_enabled: boolean
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          available_time_limit?: string | null
-          capacity?: number | null
-          category_id?: string | null
-          created_at?: string | null
-          facilities?: string | null
-          id?: string
-          image_url?: string | null
-          is_enabled?: boolean
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          available_time_limit?: string | null
-          capacity?: number | null
-          category_id?: string | null
-          created_at?: string | null
-          facilities?: string | null
-          id?: string
-          image_url?: string | null
-          is_enabled?: boolean
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
           {
-            foreignKeyName: "meeting_rooms_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "meeting_room_categories"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      organization_settings: {
+      bulk_upload_logs: {
         Row: {
-          auto_permission_categories: string[] | null
-          created_at: string | null
-          default_language: string
-          default_time_format: string
-          default_week_start_day: string
+          admin_id: string | null
+          error_message: string | null
           id: string
-          limited_booking_time: boolean | null
-          office_hours: string | null
-          organization_name: string
-          personal_calendar_link: string | null
-          show_spot_image: boolean | null
-          time_zone: string | null
-          updated_at: string | null
+          timestamp: string | null
         }
         Insert: {
-          auto_permission_categories?: string[] | null
-          created_at?: string | null
-          default_language?: string
-          default_time_format?: string
-          default_week_start_day?: string
+          admin_id?: string | null
+          error_message?: string | null
           id?: string
-          limited_booking_time?: boolean | null
-          office_hours?: string | null
-          organization_name: string
-          personal_calendar_link?: string | null
-          show_spot_image?: boolean | null
-          time_zone?: string | null
-          updated_at?: string | null
+          timestamp?: string | null
         }
         Update: {
-          auto_permission_categories?: string[] | null
-          created_at?: string | null
-          default_language?: string
-          default_time_format?: string
-          default_week_start_day?: string
+          admin_id?: string | null
+          error_message?: string | null
           id?: string
-          limited_booking_time?: boolean | null
-          office_hours?: string | null
-          organization_name?: string
-          personal_calendar_link?: string | null
-          show_spot_image?: boolean | null
-          time_zone?: string | null
-          updated_at?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      email_logs: {
+        Row: {
+          email: string | null
+          error_message: string | null
+          id: number
+          status: string | null
+          timestamp: string | null
+          type: string | null
+        }
+        Insert: {
+          email?: string | null
+          error_message?: string | null
+          id?: number
+          status?: string | null
+          timestamp?: string | null
+          type?: string | null
+        }
+        Update: {
+          email?: string | null
+          error_message?: string | null
+          id?: number
+          status?: string | null
+          timestamp?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          id: number
+          ip_address: string | null
+          pin: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          id?: number
+          ip_address?: string | null
+          pin?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          id?: number
+          ip_address?: string | null
+          pin?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      otp_attempts: {
+        Row: {
+          id: number
+          otp: string | null
+          success: boolean | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: number
+          otp?: string | null
+          success?: boolean | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: number
+          otp?: string | null
+          success?: boolean | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      otp_requests: {
+        Row: {
+          email: string | null
+          id: number
+          ip_address: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          email?: string | null
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          email?: string | null
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
         }
         Relationships: []
       }
       otps: {
         Row: {
           created_at: string | null
-          expires_at: string
-          id: string
-          otp_code: string
-          user_id: string
+          expires_at: string | null
+          id: number
+          otp: string | null
+          used: boolean | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
-          expires_at: string
-          id?: string
-          otp_code: string
-          user_id: string
+          expires_at?: string | null
+          id?: number
+          otp?: string | null
+          used?: boolean | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
-          expires_at?: string
-          id?: string
-          otp_code?: string
-          user_id?: string
+          expires_at?: string | null
+          id?: number
+          otp?: string | null
+          used?: boolean | null
+          user_id?: string | null
         }
         Relationships: []
-      }
-      patients: {
-        Row: {
-          concern: string
-          created_at: string
-          id: string
-          name: string
-          password_hash: string
-          phone: string
-          pin: string
-          updated_at: string
-        }
-        Insert: {
-          concern: string
-          created_at?: string
-          id?: string
-          name: string
-          password_hash: string
-          phone: string
-          pin: string
-          updated_at?: string
-        }
-        Update: {
-          concern?: string
-          created_at?: string
-          id?: string
-          name?: string
-          password_hash?: string
-          phone?: string
-          pin?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      prescriptions: {
-        Row: {
-          advice: string | null
-          appointment_id: string | null
-          created_at: string
-          doctor_id: string
-          id: string
-          medications: string | null
-          patient_id: string
-          prescription_date: string
-          tests: string | null
-          updated_at: string
-        }
-        Insert: {
-          advice?: string | null
-          appointment_id?: string | null
-          created_at?: string
-          doctor_id: string
-          id?: string
-          medications?: string | null
-          patient_id: string
-          prescription_date?: string
-          tests?: string | null
-          updated_at?: string
-        }
-        Update: {
-          advice?: string | null
-          appointment_id?: string | null
-          created_at?: string
-          doctor_id?: string
-          id?: string
-          medications?: string | null
-          patient_id?: string
-          prescription_date?: string
-          tests?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prescriptions_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prescriptions_doctor_id_fkey"
-            columns: ["doctor_id"]
-            isOneToOne: false
-            referencedRelation: "doctors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prescriptions_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
-          category_access: string[] | null
           created_at: string | null
           department: string | null
           designation: string | null
-          email: string
+          email: string | null
           id: string
-          is_enabled: boolean | null
-          language: string | null
-          name: string
-          notification_preference: boolean | null
-          password_hash: string | null
+          name: string | null
           phone: string | null
-          pin: string
-          role: string
-          time_format: string | null
+          pin: string | null
+          role: string | null
+          status: string | null
           updated_at: string | null
           username: string | null
-          week_start_day: string | null
         }
         Insert: {
-          category_access?: string[] | null
           created_at?: string | null
           department?: string | null
           designation?: string | null
-          email: string
+          email?: string | null
           id: string
-          is_enabled?: boolean | null
-          language?: string | null
-          name: string
-          notification_preference?: boolean | null
-          password_hash?: string | null
+          name?: string | null
           phone?: string | null
-          pin: string
-          role?: string
-          time_format?: string | null
+          pin?: string | null
+          role?: string | null
+          status?: string | null
           updated_at?: string | null
           username?: string | null
-          week_start_day?: string | null
         }
         Update: {
-          category_access?: string[] | null
           created_at?: string | null
           department?: string | null
           designation?: string | null
-          email?: string
+          email?: string | null
           id?: string
-          is_enabled?: boolean | null
-          language?: string | null
-          name?: string
-          notification_preference?: boolean | null
-          password_hash?: string | null
+          name?: string | null
           phone?: string | null
-          pin?: string
-          role?: string
-          time_format?: string | null
+          pin?: string | null
+          role?: string | null
+          status?: string | null
           updated_at?: string | null
           username?: string | null
-          week_start_day?: string | null
+        }
+        Relationships: []
+      }
+      registration_logs: {
+        Row: {
+          error_message: string | null
+          id: number
+          ip_address: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          id?: number
+          ip_address?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          available_time: Json | null
+          capacity: number | null
+          color: string | null
+          created_at: string | null
+          facilities: string | null
+          id: string
+          image: string | null
+          name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          available_time?: Json | null
+          capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          facilities?: string | null
+          id?: string
+          image?: string | null
+          name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          available_time?: Json | null
+          capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          facilities?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: number
+          token: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: number
+          token?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: number
+          token?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          id: string
+          layout: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          layout?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          layout?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -576,17 +520,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_email_by_pin: {
-        Args: { p_pin: string }
-        Returns: string
-      }
-      get_email_by_username: {
-        Args: { p_username: string }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      repeat_type_enum: "no_repeat" | "daily" | "weekly" | "monthly" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -713,6 +650,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      repeat_type_enum: ["no_repeat", "daily", "weekly", "monthly", "custom"],
+    },
   },
 } as const
