@@ -31,7 +31,7 @@ export const generateTimeOptions = (roomAvailableStart?: string, roomAvailableEn
 
   while (isBefore(currentTime, endTime) || isSameDay(currentTime, endTime)) {
     options.push(format(currentTime, "HH:mm"));
-    currentTime = addMinutes(currentTime, 15); // Changed from 30 to 15 minutes
+    currentTime = addMinutes(currentTime, 30);
   }
   return options;
 };
