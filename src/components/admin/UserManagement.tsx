@@ -1,327 +1,284 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, Upload, MoreVertical, Edit, Trash2, Ban, CheckCircle } from 'lucide-react';
-import { AddUserModal } from './AddUserModal';
-import { EditUserModal } from './EditUserModal';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/auth";
+import { useToast } from "@/components/ui/use-toast";
+import { UserProfile } from "@/types/database";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Edit, Trash2, Ban, CheckCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import UserFormDialog from "./UserFormDialog";
 
-interface User {
-  id: string;
-  name: string;
-  pin: string;
-  email: string;
-  phone: string;
-  department: string;
-  designation: string;
-  status: 'active' | 'blocked';
-}
+const usersPerPageOptions = [10, 20, 50, 100];
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    pin: '1234',
-    email: 'john@onnorokom.com',
-    phone: '+8801234567890',
-    department: 'Software Development',
-    designation: 'Senior Developer',
-    status: 'active'
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    pin: '5678',
-    email: 'jane@onnorokom.com',
-    phone: '+8801234567891',
-    department: 'Human Resource Management',
-    designation: 'HR Manager',
-    status: 'active'
-  },
-  {
-    id: '3',
-    name: 'Bob Wilson',
-    pin: '9012',
-    email: 'bob@onnorokom.com',
-    phone: '+8801234567892',
-    department: 'Finance & Accounts',
-    designation: 'Finance Officer',
-    status: 'blocked'
-  }
-];
-
-export const UserManagement = () => {
+const UserManagement = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [showEditUser, setShowEditUser] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [usersPerPage, setUsersPerPage] = useState(usersPerPageOptions[0]);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.pin.includes(searchTerm) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.designation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchUsers = useCallback(async () => {
+    const offset = (currentPage - 1) * usersPerPage;
+    let query = supabase
+      .from('profiles')
+      .select('*', { count: 'exact' });
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+    if (searchQuery) {
+      query = query.or(`name.ilike.%${searchQuery}%,pin.ilike.%${searchQuery}%,department.ilike.%${searchQuery}%,designation.ilike.%${searchQuery}%`);
+    }
 
-  const handleEditUser = (user: User) => {
-    setSelectedUser(user);
-    setShowEditUser(true);
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + usersPerPage - 1);
+
+    if (error) {
+      toast({
+        title: "Error fetching users",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setUsers(data || []);
+      setTotalUsersCount(count || 0);
+    }
+  }, [searchQuery, currentPage, usersPerPage, toast]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleSearch = () => {
+    setCurrentPage(1); // Reset to first page on new search
+    fetchUsers();
   };
 
-  const handleDeleteUser = (userId: string) => {
-    if (confirm('Are you sure to delete this user?')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
+  const handleEditUserSuccess = () => {
+    setIsEditUserDialogOpen(false);
+    setEditingUser(null);
+    fetchUsers();
+    toast({ title: "User Updated", description: "User profile has been successfully updated." });
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Delete from profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      toast({ title: "User Deleted", description: "User has been successfully deleted." });
+      fetchUsers();
+    } catch (error: any) {
       toast({
-        title: "User Deleted",
-        description: "User has been successfully deleted",
+        title: "Deletion Error",
+        description: error.message || "An unexpected error occurred during user deletion.",
+        variant: "destructive",
       });
     }
   };
 
-  const handleToggleUserStatus = (userId: string, currentStatus: 'active' | 'blocked') => {
-    const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-    const action = newStatus === 'blocked' ? 'Block' : 'Unblock';
-    
-    if (confirm(`Are you sure to ${action} this user?`)) {
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
-      ));
+  const handleToggleUserStatus = async (user: UserProfile) => {
+    const newStatus = user.status === 'active' ? 'blocked' : 'active';
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
       toast({
-        title: `User ${action}ed`,
-        description: `User has been successfully ${action.toLowerCase()}ed`,
+        title: "User Status Updated",
+        description: `User ${user.name} has been ${newStatus}.`,
+      });
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Status Update Error",
+        description: error.message || "An unexpected error occurred while updating user status.",
+        variant: "destructive",
       });
     }
   };
 
-  const handleBulkUpload = () => {
-    // Create a file input element
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        // Mock CSV processing
-        toast({
-          title: "Bulk Upload",
-          description: "CSV file processing would be implemented here",
-        });
-      }
-    };
-    input.click();
-  };
+  const totalPages = Math.ceil(totalUsersCount / usersPerPage);
 
   return (
     <div className="space-y-6">
-      {/* Actions Bar */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">User Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, PIN, email, department..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+      <h1 className="text-3xl font-bold mb-6">User Management</h1>
 
-            {/* Add User Buttons */}
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={handleBulkUpload}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Bulk User
-              </Button>
-              <Button 
-                onClick={() => setShowAddUser(true)}
-                className="flex items-center gap-2 bg-gradient-primary"
-              >
-                <Plus className="h-4 w-4" />
-                Add New User
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search and Action Buttons */}
+      <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <div className="flex-1 flex items-center space-x-2 min-w-[250px]">
+          <Input
+            placeholder="Search by name, PIN, department, designation..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => { if (e.key === 'Enter') handleSearch(); }}
+          />
+          <Button onClick={handleSearch}>
+            <Search className="h-4 w-4 mr-2" /> Search
+          </Button>
+        </div>
+      </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Users List ({filteredUsers.length} users)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
+      {/* User List Table */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">User List</h2>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>PIN</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>PIN</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Designation</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Action</TableHead>
+                  <TableCell colSpan={8} className="h-24 text-center text-gray-500">
+                    No users found.
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedUsers.map((user) => (
+              ) : (
+                users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.pin}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phone}</TableCell>
-                    <TableCell>{user.department}</TableCell>
-                    <TableCell>{user.designation}</TableCell>
+                    <TableCell>{user.department || "N/A"}</TableCell>
+                    <TableCell>{user.designation || "N/A"}</TableCell>
                     <TableCell>
-                      <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        user.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                      }`}>
                         {user.status}
-                      </Badge>
+                      </span>
                     </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
+                    <TableCell className="text-right flex flex-nowrap justify-end gap-1 min-w-[120px]">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setEditingUser(user); setIsEditUserDialogOpen(true); }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleToggleUserStatus(user.id, user.status)}
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the user.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant={user.status === 'active' ? "secondary" : "default"}
+                            size="sm"
                           >
-                            {user.status === 'active' ? (
-                              <>
-                                <Ban className="h-4 w-4 mr-2" />
-                                Block
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Unblock
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            {user.status === 'active' ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to {user.status === 'active' ? "block" : "activate"} this user?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will change the user's status to {user.status === 'active' ? "blocked" : "active"}. They will {user.status === 'active' ? "not be able to log in" : "be able to log in"} after this action.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleToggleUserStatus(user)}>
+                              {user.status === 'active' ? "Block User" : "Activate User"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Rows per page:</span>
+            <Select value={String(usersPerPage)} onValueChange={(value) => { setUsersPerPage(Number(value)); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[80px]">
+                <SelectValue placeholder={usersPerPage} />
+              </SelectTrigger>
+              <SelectContent>
+                {usersPerPageOptions.map(option => (
+                  <SelectItem key={option} value={String(option)}>{option}</SelectItem>
                 ))}
-              </TableBody>
-            </Table>
+              </SelectContent>
+            </Select>
           </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    isActive={currentPage === page}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Show:</span>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="border rounded px-2 py-1 text-sm"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-              <span className="text-sm text-muted-foreground">per page</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Add User Modal */}
-      <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-          </DialogHeader>
-          <AddUserModal 
-            onSuccess={(newUser) => {
-              setUsers(prev => [...prev, newUser]);
-              setShowAddUser(false);
-            }}
-            onClose={() => setShowAddUser(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Modal */}
-      <Dialog open={showEditUser} onOpenChange={setShowEditUser}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-          </DialogHeader>
-          {selectedUser && (
-            <EditUserModal 
-              user={selectedUser}
-              onSuccess={(updatedUser) => {
-                setUsers(prev => prev.map(user => 
-                  user.id === updatedUser.id ? updatedUser : user
-                ));
-                setShowEditUser(false);
-              }}
-              onClose={() => setShowEditUser(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {isEditUserDialogOpen && editingUser && (
+        <UserFormDialog
+          open={isEditUserDialogOpen}
+          onOpenChange={setIsEditUserDialogOpen}
+          user={editingUser}
+          onSaveSuccess={handleEditUserSuccess}
+        />
+      )}
     </div>
   );
 };
+
+export default UserManagement;
