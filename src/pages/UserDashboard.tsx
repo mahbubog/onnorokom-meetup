@@ -20,11 +20,13 @@ import { Room, Booking } from "@/types/database";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingDetailsDialog from "@/components/BookingDetailsDialog";
 import MiniCalendar from "@/components/MiniCalendar";
+import { useResponsiveSidebar } from "@/hooks/use-responsive-sidebar";
 
 const UserDashboard = () => {
   const { session, isAdmin, isLoading } = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isCollapsed, toggleSidebar } = useResponsiveSidebar();
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [layout, setLayout] = useState<"daily" | "weekly">("daily");
@@ -312,29 +314,42 @@ const UserDashboard = () => {
 
       {/* Main Content Area */}
       <div className="flex flex-col md:flex-row flex-1">
-        {/* Left Sidebar */}
-        <div className="w-full md:w-1/5 flex-shrink-0 p-4 border-b md:border-b-0 md:border-r dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col space-y-4 overflow-y-auto h-full">
-          <MiniCalendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={setSelectedDate}
-          />
-          <div className="space-y-2">
-            <Label htmlFor="layout-filter">Layout Filter</Label>
-            <Select value={layout} onValueChange={(value: "daily" | "weekly") => saveUserPreference(value)}>
-              <SelectTrigger id="layout-filter">
-                <SelectValue placeholder="Select layout" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Left Sidebar - Responsive */}
+        <div className={`${isCollapsed ? 'w-16' : 'w-full sm:w-80 md:w-1/5 lg:w-80 xl:w-96'} flex-shrink-0 p-4 border-b md:border-b-0 md:border-r dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col space-y-4 overflow-y-auto h-full transition-all duration-300`}>
+          {/* Sidebar Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="self-start md:hidden"
+            onClick={toggleSidebar}
+          >
+            {isCollapsed ? '→' : '←'}
+          </Button>
+          {!isCollapsed && (
+            <>
+              <MiniCalendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="layout-filter">Layout Filter</Label>
+                <Select value={layout} onValueChange={(value: "daily" | "weekly") => saveUserPreference(value)}>
+                  <SelectTrigger id="layout-filter">
+                    <SelectValue placeholder="Select layout" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right Content Area (Main Schedule View) */}
-        <div className="w-full md:w-4/5 p-4 overflow-auto">
+        <div className={`${isCollapsed ? 'w-full' : 'w-full md:w-4/5'} p-4 overflow-auto transition-all duration-300`}>
           {layout === "daily" ? (
             <DailyScheduleGrid
               rooms={rooms}

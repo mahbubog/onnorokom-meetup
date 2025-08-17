@@ -5,15 +5,15 @@ import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils"; // Added import for cn
 
-// Generates 30-minute time slots for the entire day (e.g., "00:00", "00:30", ..., "23:30")
+// Generates 15-minute time slots for the entire day (e.g., "00:00", "00:15", "00:30", ..., "23:45")
 const generateDetailedTimeSlots = () => {
   const slots = [];
   let currentTime = parseISO(`2000-01-01T00:00:00`);
-  const endTime = parseISO(`2000-01-01T23:59:00`); // Up to 23:30
+  const endTime = parseISO(`2000-01-01T23:59:00`); // Up to 23:45
 
   while (isBefore(currentTime, endTime) || (currentTime.getHours() === endTime.getHours() && currentTime.getMinutes() === endTime.getMinutes())) {
     slots.push(format(currentTime, "HH:mm"));
-    currentTime = addMinutes(currentTime, 30);
+    currentTime = addMinutes(currentTime, 15); // Changed from 30 to 15 minutes
   }
   return slots;
 };
@@ -42,25 +42,28 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
   onBookSlot,
   onViewBooking,
 }) => {
-  const allDetailedTimeSlots = generateDetailedTimeSlots(); // 30-minute intervals for grid cells (48 slots)
+  const allDetailedTimeSlots = generateDetailedTimeSlots(); // 15-minute intervals for grid cells (96 slots)
   const allHourlyLabels = generateHourlyLabels(); // Hourly labels for the header (24 labels)
 
-  // State to control the visible 6-hour window (index refers to the start of 30-min slots)
-  // 0 = 00:00, 12 = 06:00, 24 = 12:00, 36 = 18:00
-  const [visibleTimeStartIndex, setVisibleTimeStartIndex] = useState(18); // Start at 9 AM (index 18 for 09:00)
+  // Get current hour and calculate starting index (4 slots per hour with 15-min intervals)
+  const currentHour = new Date().getHours();
+  const defaultStartIndex = currentHour * 4; // 4 slots per hour (15-min intervals)
+  
+  // State to control the visible 6-hour window (index refers to the start of 15-min slots)
+  const [visibleTimeStartIndex, setVisibleTimeStartIndex] = useState(defaultStartIndex);
 
-  // Calculate the visible 30-minute slots (12 slots for 6 hours)
-  const visibleDetailedTimeSlots = allDetailedTimeSlots.slice(visibleTimeStartIndex, visibleTimeStartIndex + 12);
+  // Calculate the visible 15-minute slots (24 slots for 6 hours)
+  const visibleDetailedTimeSlots = allDetailedTimeSlots.slice(visibleTimeStartIndex, visibleTimeStartIndex + 24);
   // Calculate the visible hourly labels (6 labels for 6 hours)
-  const visibleHourlyLabels = allHourlyLabels.slice(visibleTimeStartIndex / 2, (visibleTimeStartIndex / 2) + 6);
+  const visibleHourlyLabels = allHourlyLabels.slice(visibleTimeStartIndex / 4, (visibleTimeStartIndex / 4) + 6);
 
   const handlePrevTimeRange = () => {
-    setVisibleTimeStartIndex(prev => Math.max(0, prev - 12)); // Move back 6 hours (12 x 30-min slots)
+    setVisibleTimeStartIndex(prev => Math.max(0, prev - 24)); // Move back 6 hours (24 x 15-min slots)
   };
 
   const handleNextTimeRange = () => {
-    const maxStartIndex = allDetailedTimeSlots.length - 12; // Max index to show last 6 hours
-    setVisibleTimeStartIndex(prev => Math.min(maxStartIndex, prev + 12)); // Move forward 6 hours
+    const maxStartIndex = allDetailedTimeSlots.length - 24; // Max index to show last 6 hours
+    setVisibleTimeStartIndex(prev => Math.min(maxStartIndex, prev + 24)); // Move forward 6 hours
   };
 
   const getBookingsForRoomAndDate = (roomId: string, date: Date) => {
@@ -88,7 +91,7 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
             variant="outline"
             size="icon"
             onClick={handleNextTimeRange}
-            disabled={visibleTimeStartIndex >= (allDetailedTimeSlots.length - 12)}
+            disabled={visibleTimeStartIndex >= (allDetailedTimeSlots.length - 24)}
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
@@ -118,12 +121,12 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
         {/* Main Grid Content - Scrollable */}
         <div className="flex-1 overflow-x-hidden">
           {/* Hourly Time Headers */}
-          <div className="grid grid-cols-12 border-b border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-24 border-b border-gray-200 dark:border-gray-700">
             {visibleHourlyLabels.map((label: string, _index: number) => (
               <div
                 key={label}
                 className="h-16 flex items-center justify-center p-2 font-semibold text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
-                style={{ gridColumn: 'span 2' }} // Each hourly label spans two 30-min columns
+                style={{ gridColumn: 'span 4' }} // Each hourly label spans four 15-min columns
               >
                 {label}
               </div>
@@ -133,10 +136,10 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
           {/* Room Schedule Rows */}
           {rooms.map((room: Room) => {
             const dailyBookings = getBookingsForRoomAndDate(room.id, selectedDate);
-            let slotsToSkip = 0; // Counter for 30-min slots covered by a rendered booking
+            let slotsToSkip = 0; // Counter for 15-min slots covered by a rendered booking
 
             return (
-              <div key={room.id} className="grid grid-cols-12 h-24"> {/* Now 12 columns, stretching */}
+              <div key={room.id} className="grid grid-cols-24 h-24"> {/* Now 24 columns for 15-min intervals */}
                 {visibleDetailedTimeSlots.map((slotTime: string, _index: number) => {
                   if (slotsToSkip > 0) {
                     slotsToSkip--;
@@ -146,7 +149,7 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
                   const slotStartDateTime = parseISO(`2000-01-01T${slotTime}:00`);
                   let renderedBooking: Booking | null = null;
 
-                  // Find a booking that starts exactly at this 30-min slot
+                  // Find a booking that starts exactly at this 15-min slot
                   for (const booking of dailyBookings) {
                     const bookingStart = parseISO(`2000-01-01T${booking.start_time}`);
                     if (isSameDay(bookingStart, slotStartDateTime) && bookingStart.getHours() === slotStartDateTime.getHours() && bookingStart.getMinutes() === slotStartDateTime.getMinutes()) {
@@ -159,7 +162,7 @@ const DailyScheduleGrid: React.FC<DailyScheduleGridProps> = ({
                     const bookingStart = parseISO(`2000-01-01T${renderedBooking.start_time}`);
                     const bookingEnd = parseISO(`2000-01-01T${renderedBooking.end_time}`);
                     const durationMinutes = differenceInMinutes(bookingEnd, bookingStart);
-                    const colSpan = Math.ceil(durationMinutes / 30); // Number of 30-min slots it spans
+                    const colSpan = Math.ceil(durationMinutes / 15); // Number of 15-min slots it spans
 
                     slotsToSkip = colSpan - 1; // Update counter to skip subsequent covered slots
 

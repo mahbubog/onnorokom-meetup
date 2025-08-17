@@ -9,15 +9,14 @@ interface MiniCalendarProps extends DayPickerSingleProps {
 
 const MiniCalendar: React.FC<MiniCalendarProps> = ({ selected, onSelect, className, ...props }) => {
   return (
-    <Calendar
-      selected={selected}
-      onSelect={onSelect}
-      className={cn(
-        "mx-auto", // Center on all screens
-        "w-full", // Take full width of parent (sidebar)
-        "max-w-[315px]", // Max width for desktop
-        className // Removed aspect-[315/476] and overflow-hidden
-      )}
+    <div className="flex justify-center items-center w-full">
+      <Calendar
+        selected={selected}
+        onSelect={onSelect}
+        className={cn(
+          "w-full max-w-[280px] md:max-w-[315px]", // Responsive max-width
+          className
+        )}
       classNames={{
         // Adjust internal calendar elements to fit better within the constrained aspect ratio
         caption: "flex justify-center pt-1 relative items-center text-sm",
@@ -45,8 +44,9 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ selected, onSelect, classNa
         day_hidden: "invisible",
         ...props.classNames,
       }}
-      {...props}
-    />
+        {...props}
+      />
+    </div>
   );
 };
 
